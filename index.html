@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>QUESTBOUND • Fire Emblem Edition</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&amp;display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=VT323&amp;display=swap" rel="stylesheet">
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap');
+        @import url('https://fonts.googleapis.com/css2?family=VT323&display=swap');
+        
+        body {
+            font-family: 'VT323', monospace;
+            background: #0f172a;
+            color: #e2e8f0;
+            image-rendering: pixelated;
+        }
+        
+        .title-font {
+            font-family: 'Press Start 2P', system-ui;
+        }
+
+        .parchment {
+            background: #f5e8c7;
+            box-shadow: 0 0 0 8px #78350f, 0 0 0 10px #451a03;
+            border: 4px solid #451a03;
+        }
+
+        .battle-canvas {
+            image-rendering: pixelated;
+            border: 8px solid #78350f;
+            box-shadow: 0 0 0 6px #451a03;
+        }
+
+        .damage-pop {
+            position: absolute;
+            font-family: 'Press Start 2P', system-ui;
+            font-size: 32px;
+            font-weight: bold;
+            color: #f87171;
+            text-shadow: -3px -3px 0 #000, 3px -3px 0 #000, -3px 3px 0 #000, 3px 3px 0 #000;
+            pointer-events: none;
+            animation: damageFloat 1.3s forwards;
+        }
+
+        @keyframes damageFloat {
+            0% { transform: translateY(0); opacity: 1; }
+            100% { transform: translateY(-140px); opacity: 0; }
+        }
+    </style>
+</head>
+<body class="min-h-screen bg-slate-950 text-slate-200">
+    <div class="flex h-screen overflow-hidden">
+        <!-- LEFT: HEROES -->
+        <div class="w-80 bg-[#1e2937] border-r-4 border-[#78350f] flex flex-col">
+            <div class="p-4 border-b-4 border-[#78350f] bg-[#334155]">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-amber-400 rounded-full flex items-center justify-center text-xl font-bold text-black">O</div>
+                    <div>
+                        <div class="title-font text-2xl text-amber-300">ORIN</div>
+                        <div class="text-emerald-400" id="orin-level">LV 3 • Knight</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-1 flex items-center justify-center bg-[#0f172a] p-8" id="orin-container">
+                <img id="orin-sprite" src="https://picsum.photos/id/1015/140/140" class="sprite" style="image-rendering: pixelated;">
+            </div>
+
+            <div class="p-4 border-t border-[#78350f]">
+                <div class="flex justify-between text-sm mb-1">
+                    <span>EXP</span>
+                    <span id="orin-exp-text">420 / 650</span>
+                </div>
+                <div class="h-4 bg-slate-800 border-2 border-amber-400 overflow-hidden">
+                    <div id="orin-exp-bar" class="h-full bg-gradient-to-r from-amber-400 to-yellow-300 w-[65%]"></div>
+                </div>
+            </div>
+
+            <!-- Elara -->
+            <div class="p-4 border-t-4 border-[#78350f] bg-[#1e2937]">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-pink-400 rounded-full flex items-center justify-center text-xl font-bold text-black">E</div>
+                    <div>
+                        <div class="title-font text-2xl text-pink-300">ELARA</div>
+                        <div class="text-emerald-400" id="elara-level">LV 2 • Swordmaster</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="flex-1 flex items-center justify-center bg-[#0f172a] p-8" id="elara-container">
+                <img id="elara-sprite" src="https://picsum.photos/id/1011/140/140" class="sprite" style="image-rendering: pixelated;">
+            </div>
+
+            <div class="p-4 border-t border-[#78350f]">
+                <div class="flex justify-between text-sm mb-1">
+                    <span>EXP</span>
+                    <span id="elara-exp-text">180 / 480</span>
+                </div>
+                <div class="h-4 bg-slate-800 border-2 border-pink-400 overflow-hidden">
+                    <div id="elara-exp-bar" class="h-full bg-gradient-to-r from-pink-400 to-rose-300 w-[38%]"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- CENTER: BATTLE -->
+        <div class="flex-1 flex flex-col">
+            <header class="bg-[#1e2937] border-b-4 border-[#78350f] p-4 flex items-center justify-between">
+                <div class="title-font text-4xl tracking-widest text-amber-300">QUESTBOUND</div>
+                <button onclick="addNewQuest()" 
+                        class="px-8 py-3 bg-gradient-to-r from-amber-400 to-yellow-400 text-black title-font font-bold text-lg hover:brightness-110 transition">
+                    + NEW QUEST
+                </button>
+            </header>
+
+            <div class="flex-1 relative flex items-center justify-center bg-black" id="battle-area">
+                <canvas id="battle-canvas" width="820" height="440" class="battle-canvas"></canvas>
+                
+                <!-- Monster HP Bar -->
+                <div class="absolute top-6 left-1/2 -translate-x-1/2 bg-black/90 px-8 py-3 border-4 border-red-700 flex items-center gap-4 rounded">
+                    <span class="title-font text-red-400">VOID DRAGON</span>
+                    <div class="w-72 h-6 bg-slate-900 border-2 border-red-500 overflow-hidden">
+                        <div id="monster-hp-bar" class="h-full bg-red-500 transition-all w-[65%]"></div>
+                    </div>
+                    <span class="font-bold text-red-400" id="monster-hp-text">1420 / 2200</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- RIGHT: QUESTS -->
+        <div class="w-96 bg-[#1e2937] border-l-4 border-[#78350f] flex flex-col">
+            <div class="p-4 border-b-4 border-[#78350f]">
+                <div class="title-font text-3xl">ACTIVE QUESTS</div>
+            </div>
+            
+            <div id="quest-list" class="flex-1 overflow-auto p-4 space-y-4"></div>
+
+            <div class="p-4 border-t-4 border-[#78350f] bg-[#16202e]">
+                <div class="grid grid-cols-2 gap-4 text-center">
+                    <div>
+                        <div id="total-completed" class="text-5xl font-bold text-emerald-400">14</div>
+                        <div class="text-xs tracking-widest">COMPLETED</div>
+                    </div>
+                    <div>
+                        <div id="total-xp" class="text-5xl font-bold text-amber-400">1840</div>
+                        <div class="text-xs tracking-widest">TOTAL XP</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Quest Modal -->
+    <div id="new-quest-modal" class="hidden fixed inset-0 bg-black/80 flex items-center justify-center z-50">
+        <div class="parchment w-full max-w-md mx-4 p-8">
+            <h2 class="title-font text-3xl text-center mb-6">NEW QUEST</h2>
+            
+            <input id="quest-title" type="text" placeholder="What needs to be done?" 
+                   class="w-full p-4 text-black text-lg border-4 border-[#78350f] mb-6">
+            
+            <div class="grid grid-cols-3 gap-3 mb-6">
+                <button onclick="setAssign(1)" id="btn-orin" class="py-4 border-4 border-amber-400 font-bold">ORIN</button>
+                <button onclick="setAssign(2)" id="btn-elara" class="py-4 border-4 border-pink-400 font-bold">ELARA</button>
+                <button onclick="setAssign(3)" id="btn-both" class="py-4 border-4 border-purple-400 font-bold">BOTH</button>
+            </div>
+
+            <div class="flex gap-4">
+                <button onclick="saveQuest()" class="flex-1 py-6 bg-emerald-700 hover:bg-emerald-600 text-white title-font text-xl">ACCEPT</button>
+                <button onclick="closeModal()" class="flex-1 py-6 bg-slate-700 hover:bg-slate-600 title-font text-xl">CANCEL</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        let quests = [
+            { id: 1, title: "Morning workout", assigned: 1, completed: false, xp: 50 },
+            { id: 2, title: "Finish work report", assigned: 3, completed: true, xp: 90 },
+            { id: 3, title: "Study for exam", assigned: 2, completed: false, xp: 75 }
+        ];
+
+        let orin = { level: 3, exp: 420, maxExp: 650 };
+        let elara = { level: 2, exp: 180, maxExp: 480 };
+        let monsterHP = 1420;
+        let maxMonsterHP = 2200;
+
+        const canvas = document.getElementById('battle-canvas');
+        const ctx = canvas.getContext('2d');
+
+        function drawScene() {
+            ctx.fillStyle = '#0f172a';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+            
+            // Ground
+            ctx.fillStyle = '#166534';
+            ctx.fillRect(0, 300, canvas.width, 140);
+            
+            // Simple dragon
+            ctx.fillStyle = '#4c1d95';
+            ctx.fillRect(520, 140, 180, 160);
+            
+            // Heroes
+            ctx.fillStyle = '#1e40af';
+            ctx.fillRect(140, 220, 90, 130); // Orin
+            ctx.fillStyle = '#9f1239';
+            ctx.fillRect(260, 220, 80, 130); // Elara
+        }
+
+        function animateAttack(hero) {
+            const sprite = document.getElementById(hero === 'orin' ? 'orin-sprite' : 'elara-sprite');
+            if (sprite) {
+                sprite.style.transition = 'transform 0.2s';
+                sprite.style.transform = 'scale(1.25) rotate(12deg)';
+                setTimeout(() => sprite.style.transform = 'scale(1) rotate(0deg)', 300);
+            }
+        }
+
+        function createDamagePop(x, y, dmg) {
+            const pop = document.createElement('div');
+            pop.className = 'damage-pop';
+            pop.textContent = `-${dmg}`;
+            pop.style.left = `${x}px`;
+            pop.style.top = `${y}px`;
+            document.getElementById('battle-area').appendChild(pop);
+            setTimeout(() => pop.remove(), 1400);
+        }
+
+        function triggerAttack(quest) {
+            const dmg = Math.floor(40 + Math.random() * 55);
+            
+            if (quest.assigned === 1 || quest.assigned === 3) animateAttack('orin');
+            if (quest.assigned === 2 || quest.assigned === 3) animateAttack('elara');
+            
+            monsterHP = Math.max(0, monsterHP - dmg);
+            
+            createDamagePop(480, 140, dmg);
+            
+            document.getElementById('monster-hp-bar').style.width = `${(monsterHP / maxMonsterHP) * 100}%`;
+            document.getElementById('monster-hp-text').textContent = `${monsterHP} / ${maxMonsterHP}`;
+
+            if (monsterHP <= 0) {
+                setTimeout(() => {
+                    alert("🎉 VICTORY! The dragon has been defeated!\n\nA new monster approaches...");
+                    monsterHP = 1800 + Math.floor(Math.random() * 600);
+                    maxMonsterHP = monsterHP;
+                    document.getElementById('monster-hp-bar').style.width = '100%';
+                    document.getElementById('monster-hp-text').textContent = `${monsterHP} / ${maxMonsterHP}`;
+                }, 800);
+            }
+        }
+
+        function giveXP(amount, assigned) {
+            if (assigned === 1 || assigned === 3) {
+                orin.exp += amount;
+                if (orin.exp >= orin.maxExp) {
+                    orin.level++;
+                    orin.exp = 0;
+                }
+            }
+            if (assigned === 2 || assigned === 3) {
+                elara.exp += amount;
+                if (elara.exp >= elara.maxExp) {
+                    elara.level++;
+                    elara.exp = 0;
+                }
+            }
+            updateHeroes();
+        }
+
+        function updateHeroes() {
+            document.getElementById('orin-exp-bar').style.width = `${(orin.exp / orin.maxExp) * 100}%`;
+            document.getElementById('orin-exp-text').textContent = `${orin.exp} / ${orin.maxExp}`;
+            document.getElementById('orin-level').textContent = `LV ${orin.level} • Knight`;
+
+            document.getElementById('elara-exp-bar').style.width = `${(elara.exp / elara.maxExp) * 100}%`;
+            document.getElementById('elara-exp-text').textContent = `${elara.exp} / ${elara.maxExp}`;
+            document.getElementById('elara-level').textContent = `LV ${elara.level} • Swordmaster`;
+        }
+
+        function renderQuests() {
+            const container = document.getElementById('quest-list');
+            container.innerHTML = '';
+            
+            quests.forEach(quest => {
+                const div = document.createElement('div');
+                div.className = `p-5 parchment cursor-pointer hover:scale-105 transition ${quest.completed ? 'opacity-70' : ''}`;
+                div.innerHTML = `
+                    <div class="flex justify-between items-start">
+                        <div>
+                            <div class="text-xl">${quest.title}</div>
+                            <div class="text-sm mt-1 ${quest.assigned === 1 ? 'text-amber-400' : quest.assigned === 2 ? 'text-pink-400' : 'text-purple-400'}">
+                                ${quest.assigned === 1 ? 'ORIN' : quest.assigned === 2 ? 'ELARA' : 'BOTH'}
+                            </div>
+                        </div>
+                        <button onclick="completeQuest(${quest.id}); event.stopImmediatePropagation()" 
+                                class="px-5 py-2 bg-emerald-700 hover:bg-emerald-600 text-white text-sm title-font">
+                            ${quest.completed ? '✓ DONE' : 'COMPLETE'}
+                        </button>
+                    </div>
+                `;
+                div.onclick = () => !quest.completed && completeQuest(quest.id);
+                container.appendChild(div);
+            });
+        }
+
+        function completeQuest(id) {
+            const quest = quests.find(q => q.id === id);
+            if (!quest || quest.completed) return;
+            
+            quest.completed = true;
+            triggerAttack(quest);
+            giveXP(quest.xp, quest.assigned);
+            
+            document.getElementById('total-completed').textContent = quests.filter(q => q.completed).length;
+            renderQuests();
+        }
+
+        function addNewQuest() {
+            document.getElementById('new-quest-modal').classList.remove('hidden');
+            document.getElementById('quest-title').focus();
+        }
+
+        function closeModal() {
+            document.getElementById('new-quest-modal').classList.add('hidden');
+        }
+
+        function setAssign(n) {
+            window.currentAssign = n;
+        }
+
+        function saveQuest() {
+            const title = document.getElementById('quest-title').value.trim();
+            if (!title) return;
+            
+            quests.unshift({
+                id: Date.now(),
+                title: title,
+                assigned: window.currentAssign || 3,
+                completed: false,
+                xp: 40 + Math.floor(Math.random() * 60)
+            });
+            
+            renderQuests();
+            closeModal();
+            document.getElementById('quest-title').value = '';
+        }
+
+        // Init
+        function init() {
+            updateHeroes();
+            renderQuests();
+            setInterval(drawScene, 1000);
+            drawScene();
+            
+            console.log("%cQuestbound v3 Loaded Successfully!", "color:#fcd34d; font-size:16px");
+        }
+
+        window.onload = init;
+    </script>
+</body>
+</html>
