@@ -1,4 +1,0 @@
-backend/venv/
-app.db
-__pycache__/
-*.pyc
