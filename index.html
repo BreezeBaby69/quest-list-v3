@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Quest List">
+<title>⚔️ Quest List</title>
+<link href="https://fonts.googleapis.com/css2?family=Press+Start+2P&family=VT323&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<!-- FIREBASE SDK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-app.js";
+  import { getDatabase, ref, onValue, set } from "https://www.gstatic.com/firebasejs/10.12.0/firebase-database.js";
+  const firebaseConfig = {
+    apiKey: "AIzaSyBHKkUx-rcghW5LQt5CX2ZWzcpKl53ZZjc",
+    authDomain: "quest-list-60b96.firebaseapp.com",
+    databaseURL: "https://quest-list-60b96-default-rtdb.firebaseio.com",
+    projectId: "quest-list-60b96",
+    storageBucket: "quest-list-60b96.firebasestorage.app",
+    messagingSenderId: "35485000332",
+    appId: "1:35485000332:web:59aa2dae39f144976651a9"
+  };
+  const app = initializeApp(firebaseConfig);
+  const db = getDatabase(app);
+  const stateRef = ref(db, "questlist/state");
+  window._fbSet = (data) => set(stateRef, data);
+  window._fbOnValue = (cb) => onValue(stateRef, cb);
+</script>
+<body>
+<div style="position:fixed;inset:0;background:repeating-linear-gradient(0deg,transparent,transparent 3px,rgba(0,0,0,0.1) 3px,rgba(0,0,0,0.1) 4px);pointer-events:none;z-index:9999"></div>
+
+<div class="hdr">
+  <button class="hdr-btn" onclick="undo()">↩ UNDO</button>
+  <div class="hdr-title">⚔️ QUEST LIST ⚔️</div>
+  <button class="hdr-btn" onclick="showScreen('quests')">MENU</button>
+</div>
+
+<div class="xp-panel">
+  <div class="xp-player">
+    <div class="xp-label">
+      <span style="color:var(--orin)">⚔️ ORIN</span>
+      <span id="orin-xp-lbl" style="color:#aaa">LVL 1</span>
+    </div>
+    <div class="xp-bar-bg"><div class="xp-bar-fill" id="orin-bar" style="background:var(--orin);width:0%"></div></div>
+  </div>
+  <div class="xp-player">
+    <div class="xp-label">
+      <span style="color:var(--wife)">👑 WIFE</span>
+      <span id="wife-xp-lbl" style="color:#aaa">LVL 1</span>
+    </div>
+    <div class="xp-bar-bg"><div class="xp-bar-fill" id="wife-bar" style="background:var(--wife);width:0%"></div></div>
+  </div>
+</div>
+
+<nav class="nav">
+  <button class="nav-btn active" onclick="showScreen('quests')" data-sc="quests"><span class="ni">⚔️</span>QUESTS</button>
+  <button class="nav-btn" onclick="showScreen('add')" data-sc="add"><span class="ni">➕</span>ADD</button>
+  <button class="nav-btn" onclick="showScreen('calendar')" data-sc="calendar"><span class="ni">📅</span>CAL</button>
+  <button class="nav-btn" onclick="showScreen('hero')" data-sc="hero"><span class="ni">🛡️</span>BATTLE</button>
+</nav>
+
+<div class="main">
+<!-- ===== QUESTS ===== -->
+<div id="sc-quests" class="screen active">
+  <div class="day-nav">
+    <button class="day-nav-btn" onclick="shiftDay(-1)">◀</button>
+    <div class="day-label" id="day-label-q">--</div>
+    <button class="day-nav-btn" onclick="shiftDay(1)">▶</button>
+  </div>
+  <div class="filter-row">
+    <button class="fil-btn active" onclick="setQFilter('all',this)">ALL</button>
+    <button class="fil-btn" onclick="setQFilter('orin',this)">🗡️</button>
+    <button class="fil-btn" onclick="setQFilter('wife',this)">🔮</button>
+    <button class="fil-btn" onclick="setQFilter('active',this)">ACTIVE</button>
+    <button class="fil-btn" onclick="setQFilter('done',this)">DONE</button>
+  </div>
+  <ul id="quest-list" style="list-style:none"></ul>
+</div>
+
+<!-- ===== ADD ===== -->
+<div id="sc-add" class="screen">
+  <div class="sec-hdr">NEW QUEST</div>
+  <div class="add-form">
+    <div class="add-form-title">⚔️ QUEST DETAILS</div>
+    <div class="lbl">TASK NAME</div>
+    <input class="inp" id="inp-name" type="text" placeholder="Enter quest name..." maxlength="80" onkeydown="if(event.key==='Enter')addTask()">
+    <div class="lbl">ASSIGN TO</div>
+    <div class="row" id="assign-row">
+      <button class="assign-btn sel-orin" onclick="setAssign('orin',this)">🗡️ ORIN</button>
+      <button class="assign-btn" onclick="setAssign('wife',this)">🔮 WIFE</button>
+      <button class="assign-btn" onclick="setAssign('both',this)">🤝 BOTH</button>
+    </div>
+    <div class="lbl">SCHEDULE</div>
+    <div class="row">
+      <button class="mode-btn active" onclick="setMode('anytime',this)">♾️ DAILY</button>
+      <button class="mode-btn" onclick="setMode('date',this)">📅 DATE</button>
+      <button class="mode-btn" onclick="setMode('recurring',this)">🔁 REPEAT</button>
+    </div>
+    <div id="date-section" style="display:none">
+      <div class="lbl">DUE DATE</div>
+      <input class="date-inp" id="inp-date" type="date">
+    </div>
+    <div id="recur-section" style="display:none">
+      <div class="lbl">REPEAT ON</div>
+      <div class="days-row">
+        <button class="day-btn" onclick="toggleDay(0,this)">S</button>
+        <button class="day-btn" onclick="toggleDay(1,this)">M</button>
+        <button class="day-btn" onclick="toggleDay(2,this)">T</button>
+        <button class="day-btn" onclick="toggleDay(3,this)">W</button>
+        <button class="day-btn" onclick="toggleDay(4,this)">T</button>
+        <button class="day-btn" onclick="toggleDay(5,this)">F</button>
+        <button class="day-btn" onclick="toggleDay(6,this)">S</button>
+      </div>
+    </div>
+    <button class="submit-btn" onclick="addTask()">⚔️ ADD QUEST</button>
+  </div>
+</div>
+
+<!-- ===== CALENDAR ===== -->
+<div id="sc-calendar" class="screen">
+  <div class="sec-hdr">CALENDAR</div>
+  <div class="cal-nav">
+    <button class="cal-nav-btn" onclick="calMove(-1)">◀ PREV</button>
+    <div class="cal-month" id="cal-month-lbl"></div>
+    <button class="cal-nav-btn" onclick="calMove(1)">NEXT ▶</button>
+  </div>
+  <div class="cal-grid" id="cal-grid"></div>
+  <div class="cal-detail-hdr" id="cal-detail-hdr"></div>
+  <ul id="cal-task-list" style="list-style:none"></ul>
+</div>
+
+<!-- ===== BATTLE ===== -->
+<div id="sc-hero" class="screen">
+  <div class="battle-screen-wrap">
+    <div id="battle-canvas-wrap">
+      <canvas id="battle-canvas"></canvas>
+      <div class="boss-hud">
+        <div class="boss-name-row">
+          <span class="boss-name-lbl" id="boss-name-lbl">LOADING...</span>
+          <span class="boss-hp-txt" id="boss-hp-txt"></span>
+        </div>
+        <div class="boss-hp-bg"><div class="boss-hp-fill" id="boss-hp-fill" style="width:100%"></div></div>
+        <div class="boss-tier-badge" id="boss-tier-badge"></div>
+      </div>
+      <div class="hero-hud">
+        <div class="hero-hud-half">
+          <div class="hhc-name orin">⚔ ORIN</div>
+          <div class="hhc-class" id="orin-class-lbl">VILLAGER</div>
+          <div class="hhc-xp-bg"><div class="hhc-xp-fill orin" id="orin-xp-hud" style="width:0%"></div></div>
+          <div class="hhc-lvl" id="orin-lvl-hud">LVL 1</div>
+        </div>
+        <div class="power-hud">
+          <div class="power-label">PWR</div>
+          <div class="power-bg"><div class="power-fill" id="power-fill" style="width:0%"></div></div>
+        </div>
+        <div class="hero-hud-half right-hud">
+          <div class="hhc-name wife">WIFE ♛</div>
+          <div class="hhc-class" id="wife-class-lbl">PEASANT GIRL</div>
+          <div class="hhc-xp-bg"><div class="hhc-xp-fill wife" id="wife-xp-hud" style="width:0%"></div></div>
+          <div class="hhc-lvl" id="wife-lvl-hud">LVL 1</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /main -->
+</div><!-- /main-wrapper -->
+
+<!-- LEVEL UP MODAL -->
+<div class="modal-ov" id="lvl-modal" onclick="closeLvlModal()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div style="font-size:22px;margin-bottom:5px;animation:bob 1s steps(2) infinite">⭐⭐⭐</div>
+    <h2>★ LEVEL UP! ★</h2>
+    <div class="big" id="lvl-num">2</div>
+    <p id="lvl-txt">You reached level 2!</p>
+    <div style="font-family:'VT323',monospace;font-size:16px;color:var(--gold);margin-bottom:14px" id="lvl-coins"></div>
+    <button class="modal-close" onclick="closeLvlModal()">AWESOME! 🎉</button>
+  </div>
+</div>
+
+<!-- TOAST MODAL -->
+<div class="modal-ov" id="toast-modal" onclick="closeToast()">
+  <div class="modal" onclick="event.stopPropagation()">
+    <div class="big" id="toast-icon">✓</div>
+    <h2 id="toast-title">DONE</h2>
+    <p id="toast-msg"></p>
+    <button class="modal-close" onclick="closeToast()">OK!</button>
+  </div>
+</div>
+
+<!-- CONFIRM DELETE MODAL -->
+<div class="modal-ov" id="confirm-modal">
+  <div class="confirm-modal">
+    <h2>⚠️ DELETE QUEST?</h2>
+    <p id="confirm-name">This quest will be lost forever!</p>
+    <div class="confirm-row">
+      <button class="confirm-yes" id="confirm-yes-btn">YES, DELETE</button>
+      <button class="confirm-no" onclick="closeConfirm()">CANCEL</button>
+    </div>
+  </div>
+</div>
+
+
+<!-- CLASS CHANGE OVERLAY -->
+<div class="class-change-overlay" id="class-change-overlay">
+  <div class="cc-stars">★ ★ ★</div>
+  <div class="cc-eyecatch">✦ CLASS CHANGE! ✦</div>
+  <canvas class="cc-canvas" id="cc-canvas" width="96" height="96"></canvas>
+  <div class="cc-hero-name" id="cc-hero-name">ORIN</div>
+  <div class="cc-class-name" id="cc-class-name">FIGHTER</div>
+  <button class="cc-btn" onclick="closeClassChange()">OUTSTANDING! ⚔</button>
+</div>
+
+<!-- BOSS INTRO OVERLAY -->
+<div class="boss-intro-overlay" id="boss-intro-overlay">
+  <div class="bi-warning">⚠ BOSS APPROACHING ⚠</div>
+  <canvas id="bi-canvas" width="128" height="128"></canvas>
+  <div class="bi-name" id="bi-boss-name">???</div>
+  <div class="bi-tier" id="bi-boss-tier">MEGA BOSS</div>
+  <div class="bi-sub">Prepare for battle!</div>
+</div>
+
+<script>
+
+  <!-- Scripts loaded in dependency order -->
+  <script src="js/config.js"></script>
+  <script src="js/sprites.js"></script>
+  <script src="js/battle.js"></script>
+  <script src="js/quests.js"></script>
+  <script src="js/calendar.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
